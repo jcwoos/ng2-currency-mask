@@ -1,4 +1,4 @@
-import { InputManager } from "./input.manager";
+import { InputManager } from './input.manager';
 
 export class InputService {
 
@@ -9,84 +9,114 @@ export class InputService {
     }
 
     addNumber(keyCode: number): void {
-        if (!this.rawValue) {
-            this.rawValue = this.applyMask(false, "0");
-        }
+        const { decimal, prefix } = this.options;
+        const keyChar = String.fromCharCode(keyCode);
+        const selectionStart = this.inputSelection.selectionStart;
+        const selectionEnd = this.inputSelection.selectionEnd;
 
-        let keyChar = String.fromCharCode(keyCode);
-        let selectionStart = this.inputSelection.selectionStart;
-        let selectionEnd = this.inputSelection.selectionEnd;
-        this.rawValue = this.rawValue.substring(0, selectionStart) + keyChar + this.rawValue.substring(selectionEnd, this.rawValue.length);
-        this.updateFieldValue(selectionStart + 1);
+        if (!this.rawValue) {
+            if (keyChar === decimal) {
+                this.rawValue = this.applyMask(false, '0');
+            } else {
+                this.rawValue = this.applyMask(false, keyChar + decimal + '0');
+            }
+            this.updateFieldValue(prefix.length + 1);
+        } else {
+            if (keyChar === decimal) {
+                this.rawValue = this.insertKeyChar(keyChar, selectionStart, selectionEnd);
+                this.updateFieldValue(0);
+                const decimalPos = this.rawValue.indexOf(decimal);
+                this.updateFieldValue(decimalPos + 1);
+            } else {
+                const decimalPos = this.rawValue.indexOf(decimal);
+                this.rawValue = this.insertKeyChar(keyChar, selectionStart, selectionEnd);
+                this.updateFieldValue(selectionStart + ((selectionStart <= decimalPos) ? 1 : 2));
+            }
+        }
+    }
+
+    insertKeyChar(keyChar: string, selectionStart: number, selectionEnd: number): string {
+        return this.rawValue.substring(0, selectionStart) + keyChar + this.rawValue.substring(selectionEnd, this.rawValue.length);
     }
 
     applyMask(isNumber: boolean, rawValue: string): string {
-        let { allowNegative, decimal, precision, prefix, suffix, thousands } = this.options;
-        rawValue = isNumber ? new Number(rawValue).toFixed(precision) : rawValue;
-        let onlyNumbers = rawValue.replace(/[^0-9]/g, "");
+        const { allowNegative, decimal, precision, prefix, suffix, thousands } = this.options;
 
-        if (!onlyNumbers) {
-            return "";
+        const thousandsRegex = new RegExp(thousands === '.' ? '\\.' : thousands, 'g');
+        const decimalRegex = new RegExp(decimal === '.' ? '\\.' : decimal, 'g');
+
+        if (isNumber) {
+            rawValue = new Number(rawValue).toFixed(precision).replace(thousandsRegex, decimal);
         }
 
-        let integerPart = onlyNumbers.slice(0, onlyNumbers.length - precision).replace(/^0*/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, thousands);
+        const onlyNumbers = rawValue.replace(new RegExp('[^0-9(' + decimal + ')]', 'g'), '');
+        if (!onlyNumbers) {
+            return '';
+        }
 
-        if (integerPart == "") {
-            integerPart = "0";
+        const decimalPos = onlyNumbers.indexOf(decimal);
+        let integerPart = onlyNumbers.slice(0, decimalPos).replace(/^0*/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, thousands);
+        let decimalPart = onlyNumbers.slice(decimalPos).replace(decimalRegex, '');
+
+        if (integerPart === '') {
+            integerPart = '0';
         }
 
         let newRawValue = integerPart;
-        let decimalPart = onlyNumbers.slice(onlyNumbers.length - precision);
 
         if (precision > 0) {
-            decimalPart = "0".repeat(precision - decimalPart.length) + decimalPart;
-            newRawValue += decimal + decimalPart;
+            if (precision - decimalPart.length > 0) {
+                decimalPart = decimalPart + '0'.repeat(precision - decimalPart.length);
+            }
+            newRawValue += decimal + decimalPart.slice(0, precision);
         }
 
-        let isZero = parseInt(integerPart) == 0 && (parseInt(decimalPart) == 0 || decimalPart == "");
-        let operator = (rawValue.indexOf("-") > -1 && allowNegative && !isZero) ? "-" : "";
+        const isZero = parseInt(integerPart) === 0 && (parseInt(decimalPart) === 0 || decimalPart === '');
+        const operator = (rawValue.indexOf('-') > -1 && allowNegative && !isZero) ? '-' : '';
         return operator + prefix + newRawValue + suffix;
+
+
     }
 
     clearMask(rawValue: string): number {
-        if (rawValue == null || rawValue == "") {
+        if (rawValue == null || rawValue === '') {
             return null;
         }
 
-        let value = rawValue.replace(this.options.prefix, "").replace(this.options.suffix, "");
+        let value = rawValue.replace(this.options.prefix, '').replace(this.options.suffix, '');
 
         if (this.options.thousands) {
-            value = value.replace(new RegExp("\\" + this.options.thousands, "g"), "");
+            value = value.replace(new RegExp('\\' + this.options.thousands, 'g'), '');
         }
 
         if (this.options.decimal) {
-            value = value.replace(this.options.decimal, ".");
+            value = value.replace(this.options.decimal, '.');
         }
 
         return parseFloat(value);
     }
 
     changeToNegative(): void {
-        if (this.options.allowNegative && this.rawValue != "" && this.rawValue.charAt(0) != "-" && this.value != 0) {
-            let selectionStart = this.inputSelection.selectionStart;
-            this.rawValue = "-" + this.rawValue;
+        if (this.options.allowNegative && this.rawValue !== '' && this.rawValue.charAt(0) !== '-' && this.value !== 0) {
+            const selectionStart = this.inputSelection.selectionStart;
+            this.rawValue = '-' + this.rawValue;
             this.updateFieldValue(selectionStart + 1);
         }
     }
 
     changeToPositive(): void {
-        let selectionStart = this.inputSelection.selectionStart;
-        this.rawValue = this.rawValue.replace("-", "");
+        const selectionStart = this.inputSelection.selectionStart;
+        this.rawValue = this.rawValue.replace('-', '');
         this.updateFieldValue(selectionStart - 1);
     }
 
     fixCursorPosition(forceToEndPosition?: boolean): void {
-        let currentCursorPosition = this.inputSelection.selectionStart;
+        const currentCursorPosition = this.inputSelection.selectionStart;
 
-        //if the current cursor position is after the number end position, it is moved to the end of the number, ignoring the prefix or suffix. this behavior can be forced with forceToEndPosition flag
+        // if the current cursor position is after the number end position, it is moved to the end of the number, ignoring the prefix or suffix. this behavior can be forced with forceToEndPosition flag
         if (currentCursorPosition > this.getRawValueWithoutSuffixEndPosition() || forceToEndPosition) {
             this.inputManager.setCursorAt(this.getRawValueWithoutSuffixEndPosition());
-            //if the current cursor position is before the number start position, it is moved to the start of the number, ignoring the prefix or suffix
+            // if the current cursor position is before the number start position, it is moved to the start of the number, ignoring the prefix or suffix
         } else if (currentCursorPosition < this.getRawValueWithoutPrefixStartPosition()) {
             this.inputManager.setCursorAt(this.getRawValueWithoutPrefixStartPosition());
         }
@@ -101,7 +131,7 @@ export class InputService {
     }
 
     removeNumber(keyCode: number): void {
-        let { decimal, thousands } = this.options;
+        const { decimal, thousands } = this.options;
         let selectionEnd = this.inputSelection.selectionEnd;
         let selectionStart = this.inputSelection.selectionStart;
 
@@ -110,26 +140,26 @@ export class InputService {
             selectionStart = this.rawValue.length - this.options.suffix.length;
         }
 
-        //there is no selection
-        if (selectionEnd == selectionStart) {
-            //delete key and the target digit is a number
-            if ((keyCode == 46 || keyCode == 63272) && /^\d+$/.test(this.rawValue.substring(selectionStart, selectionEnd + 1))) {
+        // there is no selection
+        if (selectionEnd === selectionStart) {
+            // delete key and the target digit is a number
+            if ((keyCode === 46 || keyCode === 63272) && /^\d+$/.test(this.rawValue.substring(selectionStart, selectionEnd + 1))) {
                 selectionEnd = selectionEnd + 1;
             }
 
-            //delete key and the target digit is the decimal or thousands divider
-            if ((keyCode == 46 || keyCode == 63272) && (this.rawValue.substring(selectionStart, selectionEnd + 1) == decimal || this.rawValue.substring(selectionStart, selectionEnd + 1) == thousands)) {
+            // delete key and the target digit is the decimal or thousands divider
+            if ((keyCode === 46 || keyCode === 63272) && (this.rawValue.substring(selectionStart, selectionEnd + 1) === decimal || this.rawValue.substring(selectionStart, selectionEnd + 1) === thousands)) {
                 selectionEnd = selectionEnd + 2;
                 selectionStart = selectionStart + 1;
             }
 
-            //backspace key and the target digit is a number
-            if (keyCode == 8 && /^\d+$/.test(this.rawValue.substring(selectionStart - 1, selectionEnd))) {
+            // backspace key and the target digit is a number
+            if (keyCode === 8 && /^\d+$/.test(this.rawValue.substring(selectionStart - 1, selectionEnd))) {
                 selectionStart = selectionStart - 1;
             }
 
-            //backspace key and the target digit is the decimal or thousands divider
-            if (keyCode == 8 && (this.rawValue.substring(selectionStart - 1, selectionEnd) == decimal || this.rawValue.substring(selectionStart - 1, selectionEnd) == thousands)) {
+            // backspace key and the target digit is the decimal or thousands divider
+            if (keyCode === 8 && (this.rawValue.substring(selectionStart - 1, selectionEnd) === decimal || this.rawValue.substring(selectionStart - 1, selectionEnd) === thousands)) {
                 selectionStart = selectionStart - 2;
                 selectionEnd = selectionEnd - 1;
             }
@@ -140,13 +170,13 @@ export class InputService {
     }
 
     updateFieldValue(selectionStart?: number): void {
-        let newRawValue = this.applyMask(false, this.rawValue || "");
-        selectionStart = selectionStart == undefined ? this.rawValue.length : selectionStart;
+        const newRawValue = this.applyMask(false, this.rawValue || '');
+        selectionStart = selectionStart === undefined ? this.rawValue.length : selectionStart;
         this.inputManager.updateValueAndCursor(newRawValue, this.rawValue.length, selectionStart);
     }
 
     updateOptions(options: any): void {
-        let value: number = this.value;
+        const value: number = this.value;
         this.options = options;
         this.value = value;
     }
@@ -176,6 +206,6 @@ export class InputService {
     }
 
     set value(value: number) {
-        this.rawValue = this.applyMask(true, "" + value);
+        this.rawValue = this.applyMask(!!value && !isNaN(value), !!value ? '' + value : '');
     }
 }
