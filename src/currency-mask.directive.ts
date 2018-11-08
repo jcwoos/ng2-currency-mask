@@ -1,8 +1,21 @@
-import { AfterViewInit, Directive, DoCheck, ElementRef, forwardRef, HostListener, Inject, KeyValueDiffer, KeyValueDiffers, Input, OnInit, Optional } from "@angular/core";
-import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, Validator } from "@angular/forms";
+import {
+    AfterViewInit,
+    Directive,
+    DoCheck,
+    ElementRef,
+    forwardRef,
+    HostListener,
+    Inject,
+    Input,
+    KeyValueDiffer,
+    KeyValueDiffers,
+    OnInit,
+    Optional,
+} from '@angular/core';
+import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, Validator } from '@angular/forms';
 
-import { CurrencyMaskConfig, CURRENCY_MASK_CONFIG } from "./currency-mask.config";
-import { InputHandler } from "./input.handler";
+import { CURRENCY_MASK_CONFIG, CurrencyMaskConfig } from './currency-mask.config';
+import { InputHandler } from './input.handler';
 
 export const CURRENCYMASKDIRECTIVE_VALUE_ACCESSOR: any = {
     provide: NG_VALUE_ACCESSOR,
@@ -11,7 +24,7 @@ export const CURRENCYMASKDIRECTIVE_VALUE_ACCESSOR: any = {
 };
 
 @Directive({
-    selector: "[currencyMask]",
+    selector: '[currencyMask]',
     providers: [
         CURRENCYMASKDIRECTIVE_VALUE_ACCESSOR,
         { provide: NG_VALIDATORS, useExisting: CurrencyMaskDirective, multi: true }
@@ -27,13 +40,13 @@ export class CurrencyMaskDirective implements AfterViewInit, ControlValueAccesso
     keyValueDiffer: KeyValueDiffer<any, any>;
 
     optionsTemplate = {
-        align: "right",
+        align: 'right',
         allowNegative: true,
-        decimal: ".",
+        decimal: '.',
         precision: 2,
-        prefix: "$ ",
-        suffix: "",
-        thousands: ","
+        prefix: '$ ',
+        suffix: '',
+        thousands: ','
     };
 
     constructor(@Optional() @Inject(CURRENCY_MASK_CONFIG) private currencyMaskConfig: CurrencyMaskConfig, private elementRef: ElementRef, private keyValueDiffers: KeyValueDiffers) {
@@ -59,52 +72,52 @@ export class CurrencyMaskDirective implements AfterViewInit, ControlValueAccesso
         this.inputHandler = new InputHandler(this.elementRef.nativeElement, (<any>Object).assign({}, this.optionsTemplate, this.options));
     }
 
-    @HostListener("blur", ["$event"])
+    @HostListener('blur', ['$event'])
     handleBlur(event: any) {
         this.inputHandler.getOnModelTouched().apply(event);
     }
 
-    @HostListener("click", ["$event"])
+    @HostListener('click', ['$event'])
     handleClick(event: any) {
         this.inputHandler.handleClick(event, this.isChromeAndroid());
     }
 
-    @HostListener("cut", ["$event"])
+    @HostListener('cut', ['$event'])
     handleCut(event: any) {
         if (!this.isChromeAndroid()) {
             this.inputHandler.handleCut(event);
         }
     }
 
-    @HostListener("input", ["$event"])
+    @HostListener('input', ['$event'])
     handleInput(event: any) {
         if (this.isChromeAndroid()) {
             this.inputHandler.handleInput(event);
         }
     }
 
-    @HostListener("keydown", ["$event"])
+    @HostListener('keydown', ['$event'])
     handleKeydown(event: any) {
         if (!this.isChromeAndroid()) {
             this.inputHandler.handleKeydown(event);
         }
     }
 
-    @HostListener("keypress", ["$event"])
+    @HostListener('keypress', ['$event'])
     handleKeypress(event: any) {
         if (!this.isChromeAndroid()) {
             this.inputHandler.handleKeypress(event);
         }
     }
 
-    @HostListener("keyup", ["$event"])
+    @HostListener('keyup', ['$event'])
     handleKeyup(event: any) {
         if (!this.isChromeAndroid()) {
             this.inputHandler.handleKeyup(event);
         }
     }
 
-    @HostListener("paste", ["$event"])
+    @HostListener('paste', ['$event'])
     handlePaste(event: any) {
         if (!this.isChromeAndroid()) {
             this.inputHandler.handlePaste(event);
@@ -128,7 +141,7 @@ export class CurrencyMaskDirective implements AfterViewInit, ControlValueAccesso
     }
 
     validate(abstractControl: AbstractControl): { [key: string]: any; } {
-        let result: any = {};
+        const result: any = {};
 
         if (abstractControl.value > this.max) {
             result.max = true;
@@ -138,7 +151,7 @@ export class CurrencyMaskDirective implements AfterViewInit, ControlValueAccesso
             result.min = true;
         }
 
-        return result != {} ? result : null;
+        return result !== {} ? result : null;
     }
 
     writeValue(value: number): void {

@@ -74,8 +74,6 @@ export class InputService {
         const isZero = parseInt(integerPart) === 0 && (parseInt(decimalPart) === 0 || decimalPart === '');
         const operator = (rawValue.indexOf('-') > -1 && allowNegative && !isZero) ? '-' : '';
         return operator + prefix + newRawValue + suffix;
-
-
     }
 
     clearMask(rawValue: string): number {
