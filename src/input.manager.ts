@@ -42,7 +42,7 @@ export class InputManager {
             selectionStart = this.htmlInputElement.selectionStart;
             selectionEnd = this.htmlInputElement.selectionEnd;
         } else {
-            const range = document.getSelection().baseNode;
+            const range = (<any>document.getSelection()).baseNode;
 
             if (range && range.firstChild === this.htmlInputElement) {
                 const lenght = this.htmlInputElement.value.length;

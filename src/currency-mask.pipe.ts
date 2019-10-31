@@ -3,7 +3,6 @@ import { Inject, Optional, Pipe, PipeTransform } from '@angular/core';
 import { CURRENCY_MASK_CONFIG, CurrencyMaskConfig } from './currency-mask.config';
 import { InputService } from './input.service';
 
-
 @Pipe({
     name: 'currencyMask'
 })
